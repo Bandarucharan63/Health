@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173d35">
+  <title>Fieldwork | Public Health Intelligence</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="login-screen" class="login-screen">
+    <section class="login-story" aria-label="Fieldwork public health analytics">
+      <div class="brand brand-light"><span class="brand-mark">F</span><span>fieldwork<span class="brand-period">.</span></span></div>
+      <p class="eyebrow">PUBLIC HEALTH INTELLIGENCE</p>
+      <h1>Better care<br>starts <em>out there.</em></h1>
+      <p class="story-copy">A clearer view of community health programs, from first checkup to follow-up.</p>
+      <div class="story-bottom"><span class="pulse-dot"></span> COMMUNITY PROGRAMS <span class="story-divider">/</span> FIELD REPORT 01</div>
+      <div class="story-index">01 <span>—</span> 04</div>
+    </section>
+    <section class="login-panel">
+      <div class="login-topline"><span>ADMINISTRATOR ACCESS</span><span class="status-pill"><i></i> SECURE WORKSPACE</span></div>
+      <form id="login-form" class="login-form">
+        <p class="eyebrow">WELCOME BACK</p>
+        <h2>Sign in to your<br>workspace.</h2>
+        <p class="login-hint">Use any email and password to enter this local demo.</p>
+        <label for="email">Work email</label>
+        <input id="email" name="email" type="email" placeholder="you@organization.org" autocomplete="username" required>
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required>
+        <p id="login-error" class="login-error" role="alert"></p>
+        <button class="button button-primary login-submit" type="submit">Sign in <span aria-hidden="true">→</span></button>
+        <p class="demo-note">Local preview only. Authentication is not connected to an identity service.</p>
+      </form>
+      <div class="login-footer"><span>FIELDWORK ANALYTICS</span><span>DATA-LED. COMMUNITY-FOCUSED.</span></div>
+    </section>
+  </main>
+
+  <div id="app" class="app-shell" hidden>
+    <aside class="sidebar">
+      <a class="brand brand-dark" href="#overview" aria-label="Fieldwork overview"><span class="brand-mark">F</span><span>fieldwork<span class="brand-period">.</span></span></a>
+      <div class="workspace-label">WORKSPACE <span>01</span></div>
+      <nav class="side-nav" aria-label="Main navigation">
+        <button class="nav-link active" data-view="overview"><span class="nav-index">01</span> Overview</button>
+        <button class="nav-link" data-view="camps"><span class="nav-index">02</span> Program groups</button>
+        <button class="nav-link" data-view="participants"><span class="nav-index">03</span> Participants</button>
+        <button class="nav-link" data-view="analysis"><span class="nav-index">04</span> Analysis & outcomes</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="data-status"><span class="status-check">✓</span><div><strong>Dataset connected</strong><small>1,000 records loaded</small></div></div>
+        <button id="logout-button" class="logout-button">Sign out <span aria-hidden="true">↗</span></button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="breadcrumbs"><span>PUBLIC HEALTH</span><span class="crumb-slash">/</span><strong id="breadcrumb-current">OVERVIEW</strong></div>
+        <div class="topbar-right"><span class="snapshot-tag"><i></i> DATASET SNAPSHOT</span><span class="avatar" id="user-avatar">AD</span></div>
+      </header>
+
+      <section class="page-heading">
+        <div><p class="eyebrow">COMMUNITY PROGRAMS <span class="eyebrow-dot">·</span> ADMIN VIEW</p><h1 id="page-title">A pulse on public health.</h1><p id="page-subtitle" class="page-subtitle">One thousand participant records. A practical view of care delivered and outcomes reached.</p></div>
+        <div class="heading-actions"><button id="export-button" class="button button-outline" type="button">↓ <span>Export CSV</span></button><button id="print-button" class="button button-dark" type="button">Print report <span aria-hidden="true">↗</span></button></div>
+      </section>
+
+      <section class="filter-row" aria-label="Dashboard filters">
+        <div class="filter-caption"><span class="filter-glyph">⌕</span><span>VIEW DATA BY</span></div>
+        <label class="filter-control"><span>Region</span><select id="region-filter"><option value="all">All regions</option></select></label>
+        <label class="filter-control"><span>Program</span><select id="program-filter"><option value="all">All programs</option></select></label>
+        <button id="clear-filters" class="clear-filters" type="button">Clear filters</button>
+        <span id="record-count" class="record-count">Loading records…</span>
+      </section>
+
+      <div id="data-error" class="data-error" role="alert" hidden>Could not load the CSV. Open this site through the local server so the dataset can be fetched.</div>
+
+      <section id="view-overview" class="view-section active" aria-label="Overview dashboard">
+        <div class="section-kicker"><span>PROGRAM SNAPSHOT</span><span class="kicker-line"></span><span id="snapshot-period">ALL RECORDS</span></div>
+        <div id="kpi-grid" class="kpi-grid"></div>
+        <div class="dashboard-grid overview-grid">
+          <article class="panel service-panel">
+            <div class="panel-heading"><div><p class="eyebrow">CARE DELIVERED</p><h2>Services in the field</h2></div><span class="panel-aside">PARTICIPANTS</span></div>
+            <div id="service-bars" class="service-bars"></div>
+            <div class="chart-footnote"><span class="legend-dot green"></span> People reached <span class="chart-footnote-note">Counts are participant-level, not visit totals.</span></div>
+          </article>
+          <article class="panel region-panel">
+            <div class="panel-heading"><div><p class="eyebrow">GEOGRAPHIC REACH</p><h2>Coverage by region</h2></div><button class="text-action" data-go="camps" type="button">View groups <span>→</span></button></div>
+            <div id="region-bars" class="region-bars"></div>
+            <div class="chart-footnote"><span class="legend-dot coral"></span> Participant records <span class="chart-footnote-note">Uncoded records shown separately.</span></div>
+          </article>
+        </div>
+        <div class="dashboard-grid lower-grid">
+          <article class="panel outcome-panel">
+            <div class="panel-heading"><div><p class="eyebrow">FOLLOW-THROUGH</p><h2>Referral pathway</h2></div><span class="panel-aside">OF IDENTIFIED CASES</span></div>
+            <div id="referral-flow" class="referral-flow"></div>
+          </article>
+          <article class="insight-panel">
+            <div class="insight-label"><span>FIELD NOTE</span><span class="insight-spark">✳</span></div>
+            <p class="eyebrow">WHAT STANDS OUT</p><h2 id="insight-title">Reading the data…</h2><p id="insight-copy" class="insight-copy"></p>
+            <button class="insight-link" data-go="analysis" type="button">Explore analysis <span>→</span></button>
+          </article>
+        </div>
+        <div class="source-note"><span>DATA NOTE</span><p>Records are participant-level and contain no camp names or dates. Program groups below are inferred from the encoded region and health-program fields.</p></div>
+      </section>
+
+      <section id="view-camps" class="view-section" aria-label="Program group summaries" hidden>
+        <div class="section-kicker"><span>PROGRAM DELIVERY</span><span class="kicker-line"></span><span>REGION × HEALTH PROGRAM</span></div>
+        <div class="page-intro-row"><div><h2>Program groups</h2><p>Participant outcomes grouped by the region and program labels in the dataset.</p></div><span class="table-meta" id="group-count"></span></div>
+        <article class="panel table-panel"><div class="table-scroll"><table><thead><tr><th>REGION</th><th>HEALTH PROGRAM</th><th>PARTICIPANTS</th><th>CHECKUPS</th><th>VACCINATIONS</th><th>TESTS</th><th>CASES</th><th>REFERRALS</th><th>AVG. OUTCOME</th></tr></thead><tbody id="groups-body"></tbody></table></div></article>
+        <div class="source-note"><span>INTERPRETATION</span><p>These are analytical groupings, not official camp names. Each row represents records sharing the same encoded region and program.</p></div>
+      </section>
+
+      <section id="view-participants" class="view-section" aria-label="Participant records" hidden>
+        <div class="section-kicker"><span>RECORD EXPLORER</span><span class="kicker-line"></span><span>PARTICIPANT-LEVEL</span></div>
+        <div class="page-intro-row participant-intro"><div><h2>Participant records</h2><p>Search and review the preprocessed source records.</p></div><label class="search-box"><span aria-hidden="true">⌕</span><input id="participant-search" type="search" placeholder="Search region, program, outcome…" aria-label="Search participant records"></label></div>
+        <article class="panel table-panel participant-panel"><div class="table-scroll"><table><thead><tr><th>RECORD</th><th>AGE</th><th>REGION</th><th>PROGRAM</th><th>CHECKUP</th><th>VACCINE</th><th>TESTS</th><th>CASE FOUND</th><th>REFERRAL</th><th>OUTCOME</th></tr></thead><tbody id="participants-body"></tbody></table></div><div id="table-pagination" class="table-pagination"></div></article>
+        <p class="table-disclaimer">Showing up to 100 matching records. Record numbers follow the CSV row order and are not source identifiers.</p>
+      </section>
+
+      <section id="view-analysis" class="view-section" aria-label="Analysis and outcomes">
+        <div class="section-kicker"><span>OUTCOME REVIEW</span><span class="kicker-line"></span><span>DATA-LED SUMMARY</span></div>
+        <div class="analysis-header"><div><h2>From screening to follow-up.</h2><p>Outcome measures calculated directly from the current filtered records.</p></div><div class="analysis-badge"><span class="legend-dot green"></span> LIVE FILTERED VIEW</div></div>
+        <div id="analysis-cards" class="analysis-cards"></div>
+        <div class="dashboard-grid analysis-grid">
+          <article class="panel"><div class="panel-heading"><div><p class="eyebrow">PROGRAM MIX</p><h2>Participation by program</h2></div></div><div id="program-bars" class="program-bars"></div></article>
+          <article class="panel"><div class="panel-heading"><div><p class="eyebrow">DATA QUALITY</p><h2>Read with care</h2></div></div><div id="quality-notes" class="quality-notes"></div></article>
+        </div>
+        <article class="panel outcome-summary"><div class="panel-heading"><div><p class="eyebrow">EXECUTIVE SUMMARY</p><h2>Current filtered outcomes</h2></div><span id="analysis-records" class="panel-aside"></span></div><p id="summary-copy" class="summary-copy"></p></article>
+        <div class="source-note"><span>METHOD</span><p>Outcome rate is the arithmetic mean of <code>Overall_Result_Percentage</code>. Referral follow-up rate is records with <code>Referral_Followup = 1</code> divided by records with <code>Hospital_Referral = 1</code>.</p></div>
+      </section>
+
+      <footer class="app-footer"><span>FIELDWORK <span class="brand-period">.</span> PUBLIC HEALTH INTELLIGENCE</span><span>LOCAL DATA VIEW <span class="footer-separator">/</span> PREPROCESSED CSV</span></footer>
+    </main>
+  </div>
+  <script src="app.js" defer></script>
+</body>
+</html>
