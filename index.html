@@ -46,7 +46,7 @@
         <button class="nav-link" data-view="analysis"><span class="nav-index">04</span> Analysis & outcomes</button>
       </nav>
       <div class="sidebar-bottom">
-        <div class="data-status"><span class="status-check">✓</span><div><strong>Dataset connected</strong><small>1,000 records loaded</small></div></div>
+        <div class="data-status"><span class="status-check">✓</span><div><strong id="dataset-status">Loading dataset</strong><small id="dataset-count">Please wait…</small></div></div>
         <button id="logout-button" class="logout-button">Sign out <span aria-hidden="true">↗</span></button>
       </div>
     </aside>
@@ -54,7 +54,7 @@
     <main class="main-content">
       <header class="topbar">
         <div class="breadcrumbs"><span>PUBLIC HEALTH</span><span class="crumb-slash">/</span><strong id="breadcrumb-current">OVERVIEW</strong></div>
-        <div class="topbar-right"><span class="snapshot-tag"><i></i> DATASET SNAPSHOT</span><span class="avatar" id="user-avatar">AD</span></div>
+        <div class="topbar-right"><span class="snapshot-tag"><i></i> DATASET SNAPSHOT</span><button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">☾ <span>Dark mode</span></button><span class="avatar" id="user-avatar">AD</span></div>
       </header>
 
       <section class="page-heading">
@@ -66,6 +66,8 @@
         <div class="filter-caption"><span class="filter-glyph">⌕</span><span>VIEW DATA BY</span></div>
         <label class="filter-control"><span>Region</span><select id="region-filter"><option value="all">All regions</option></select></label>
         <label class="filter-control"><span>Program</span><select id="program-filter"><option value="all">All programs</option></select></label>
+        <label class="filter-control"><span>Age</span><select id="age-filter"><option value="all">All ages</option></select></label>
+        <label class="filter-control"><span>Gender</span><select id="gender-filter"><option value="all">All genders</option><option value="Female">Female</option><option value="Male">Male</option></select></label>
         <button id="clear-filters" class="clear-filters" type="button">Clear filters</button>
         <span id="record-count" class="record-count">Loading records…</span>
       </section>
@@ -87,6 +89,10 @@
             <div class="chart-footnote"><span class="legend-dot coral"></span> Participant records <span class="chart-footnote-note">Uncoded records shown separately.</span></div>
           </article>
         </div>
+        <article class="panel profile-panel">
+          <div class="panel-heading"><div><p class="eyebrow">PARTICIPANT PROFILE</p><h2>Age and gender</h2></div><span class="panel-aside">CURRENT FILTERS</span></div>
+          <div class="profile-charts"><div><p class="profile-chart-title">Age groups</p><div id="age-bars" class="profile-bars"></div></div><div><p class="profile-chart-title">Gender</p><div id="gender-bars" class="profile-bars"></div></div></div>
+        </article>
         <div class="dashboard-grid lower-grid">
           <article class="panel outcome-panel">
             <div class="panel-heading"><div><p class="eyebrow">FOLLOW-THROUGH</p><h2>Referral pathway</h2></div><span class="panel-aside">OF IDENTIFIED CASES</span></div>
@@ -111,7 +117,7 @@
       <section id="view-participants" class="view-section" aria-label="Participant records" hidden>
         <div class="section-kicker"><span>RECORD EXPLORER</span><span class="kicker-line"></span><span>PARTICIPANT-LEVEL</span></div>
         <div class="page-intro-row participant-intro"><div><h2>Participant records</h2><p>Search and review the preprocessed source records.</p></div><label class="search-box"><span aria-hidden="true">⌕</span><input id="participant-search" type="search" placeholder="Search region, program, outcome…" aria-label="Search participant records"></label></div>
-        <article class="panel table-panel participant-panel"><div class="table-scroll"><table><thead><tr><th>RECORD</th><th>AGE</th><th>REGION</th><th>PROGRAM</th><th>CHECKUP</th><th>VACCINE</th><th>TESTS</th><th>CASE FOUND</th><th>REFERRAL</th><th>OUTCOME</th></tr></thead><tbody id="participants-body"></tbody></table></div><div id="table-pagination" class="table-pagination"></div></article>
+        <article class="panel table-panel participant-panel"><div class="table-scroll"><table><thead><tr><th>RECORD</th><th>AGE</th><th>GENDER</th><th>REGION</th><th>PROGRAM</th><th>CHECKUP</th><th>VACCINE</th><th>TESTS</th><th>CASE FOUND</th><th>REFERRAL</th><th>OUTCOME</th></tr></thead><tbody id="participants-body"></tbody></table></div><div id="table-pagination" class="table-pagination"></div></article>
         <p class="table-disclaimer">Showing up to 100 matching records. Record numbers follow the CSV row order and are not source identifiers.</p>
       </section>
 

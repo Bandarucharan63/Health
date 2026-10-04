@@ -1,4 +1,4 @@
-const DATA_URL = './preprocessed_public_health_1000_records.csv';
+const DATA_URL = new URL('./preprocessed_public_health_1000_records.csv', document.currentScript.src).href;
 const REGION_FIELDS = [
   ['Region_East', 'East'],
   ['Region_North', 'North'],
@@ -10,6 +10,12 @@ const PROGRAM_FIELDS = [
   ['Health_Program_General Health Screening', 'General health screening'],
   ['Health_Program_Maternal Health', 'Maternal health'],
   ['Health_Program_Vaccination', 'Vaccination'],
+];
+const AGE_GROUP_FIELDS = [
+  ['Age_Group_18-29', '18–29'],
+  ['Age_Group_30-44', '30–44'],
+  ['Age_Group_45-59', '45–59'],
+  ['Age_Group_60+', '60+'],
 ];
 const numberFormat = new Intl.NumberFormat('en-US');
 const appState = { records: [], view: 'overview', search: '', pageSize: 100 };
@@ -62,14 +68,29 @@ function oneHotLabel(record, fields, fallback) {
 
 function regionFor(record) { return oneHotLabel(record, REGION_FIELDS, 'Not coded'); }
 function programFor(record) { return oneHotLabel(record, PROGRAM_FIELDS, 'Not coded'); }
+function ageGroupFor(record) {
+  const encoded = oneHotLabel(record, AGE_GROUP_FIELDS, '');
+  if (encoded) return encoded;
+  const age = Number(record.Age);
+  if (!Number.isFinite(age)) return 'Not coded';
+  if (age < 30) return '18–29';
+  if (age < 45) return '30–44';
+  if (age < 60) return '45–59';
+  return '60+';
+}
+function genderFor(record) { return Number(record.Gender_Male) === 1 ? 'Male' : 'Female'; }
 
 function filteredRecords() {
   const region = byId('region-filter').value;
   const program = byId('program-filter').value;
+  const age = byId('age-filter').value;
+  const gender = byId('gender-filter').value;
   return appState.records.filter((record) => {
     const matchesRegion = region === 'all' || regionFor(record) === region;
     const matchesProgram = program === 'all' || programFor(record) === program;
-    return matchesRegion && matchesProgram;
+    const matchesAge = age === 'all' || ageGroupFor(record) === age;
+    const matchesGender = gender === 'all' || genderFor(record) === gender;
+    return matchesRegion && matchesProgram && matchesAge && matchesGender;
   });
 }
 
@@ -125,6 +146,13 @@ function renderOverview(records) {
   if (uncoded) regionRows.push(['Not coded', uncoded]);
   renderBarRows(byId('region-bars'), regionRows, { colors: ['#418d70', '#e5725d', '#e9bd58', '#aaa5ca', '#9aa69f'] });
 
+  const ageRows = AGE_GROUP_FIELDS.map(([, label]) => [label, records.filter((record) => ageGroupFor(record) === label).length]);
+  const uncodedAges = records.filter((record) => ageGroupFor(record) === 'Not coded').length;
+  if (uncodedAges) ageRows.push(['Not coded', uncodedAges]);
+  renderBarRows(byId('age-bars'), ageRows, { colors: ['#418d70', '#e5725d', '#e9bd58', '#aaa5ca', '#9aa69f'] });
+  const genderRows = ['Female', 'Male'].map((label) => [label, records.filter((record) => genderFor(record) === label).length]);
+  renderBarRows(byId('gender-bars'), genderRows, { colors: ['#e5725d', '#418d70'] });
+
   const cases = sum(records, 'Health_Problem_Found');
   const referrals = sum(records, 'Hospital_Referral');
   const followups = sum(records, 'Referral_Followup');
@@ -171,14 +199,14 @@ function renderParticipants(records) {
   const query = appState.search.trim().toLowerCase();
   const matches = records.filter((record) => {
     if (!query) return true;
-    return [regionFor(record), programFor(record), record.Age, record.Overall_Result_Percentage, Number(record.Health_Problem_Found) === 1 ? 'case identified' : 'no case', Number(record.Hospital_Referral) === 1 ? 'referral' : 'no referral'].join(' ').toLowerCase().includes(query);
+    return [regionFor(record), programFor(record), record.Age, genderFor(record), ageGroupFor(record), record.Overall_Result_Percentage, Number(record.Health_Problem_Found) === 1 ? 'case identified' : 'no case', Number(record.Hospital_Referral) === 1 ? 'referral' : 'no referral'].join(' ').toLowerCase().includes(query);
   });
   const visible = matches.slice(0, appState.pageSize);
   byId('participants-body').innerHTML = visible.map((record) => {
     const index = appState.records.indexOf(record) + 1;
     const chip = (active, yes, no = 'No') => `<span class="table-chip${active ? '' : ' off'}">${active ? yes : no}</span>`;
-    return `<tr><td>PH-${String(index).padStart(4, '0')}</td><td class="table-number">${escapeHtml(record.Age)}</td><td>${escapeHtml(regionFor(record))}</td><td>${escapeHtml(programFor(record))}</td><td>${chip(Number(record.Health_Checkup) === 1, 'Yes')}</td><td>${chip(Number(record.Vaccine_Received) === 1, 'Yes')}</td><td class="table-number">${formatNumber(Number(record.Total_Tests_Performed) || 0)}</td><td>${chip(Number(record.Health_Problem_Found) === 1, 'Found', 'None')}</td><td>${chip(Number(record.Hospital_Referral) === 1, 'Referred')}</td><td class="outcome-chip">${formatPercent(Number(record.Overall_Result_Percentage) || 0)}</td></tr>`;
-  }).join('') || '<tr><td colspan="10">No matching records.</td></tr>';
+    return `<tr><td>PH-${String(index).padStart(4, '0')}</td><td class="table-number">${escapeHtml(record.Age)}</td><td>${escapeHtml(genderFor(record))}</td><td>${escapeHtml(regionFor(record))}</td><td>${escapeHtml(programFor(record))}</td><td>${chip(Number(record.Health_Checkup) === 1, 'Yes')}</td><td>${chip(Number(record.Vaccine_Received) === 1, 'Yes')}</td><td class="table-number">${formatNumber(Number(record.Total_Tests_Performed) || 0)}</td><td>${chip(Number(record.Health_Problem_Found) === 1, 'Found', 'None')}</td><td>${chip(Number(record.Hospital_Referral) === 1, 'Referred')}</td><td class="outcome-chip">${formatPercent(Number(record.Overall_Result_Percentage) || 0)}</td></tr>`;
+  }).join('') || '<tr><td colspan="11">No matching records.</td></tr>';
   byId('table-pagination').innerHTML = `<span>Showing ${formatNumber(visible.length)} of ${formatNumber(matches.length)} matching records</span><span>Maximum 100 rows</span>`;
 }
 
@@ -227,6 +255,18 @@ function render() {
   renderAnalysis(records);
 }
 
+function applyTheme(theme) {
+  const activeTheme = theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = activeTheme;
+  const dark = activeTheme === 'dark';
+  const toggle = byId('theme-toggle');
+  toggle.setAttribute('aria-pressed', String(dark));
+  toggle.setAttribute('aria-label', `Switch to ${dark ? 'light' : 'dark'} mode`);
+  toggle.innerHTML = dark ? '☀ <span>Light mode</span>' : '☾ <span>Dark mode</span>';
+  document.querySelector('meta[name="theme-color"]').content = dark ? '#101815' : '#173d35';
+  localStorage.setItem('fieldwork-theme', activeTheme);
+}
+
 function setView(view) {
   appState.view = view;
   document.querySelectorAll('.nav-link').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
@@ -264,11 +304,17 @@ async function loadData() {
     if (!appState.records.length) throw new Error('The CSV has no participant rows.');
     addFilterOptions(byId('region-filter'), REGION_FIELDS, regionFor);
     addFilterOptions(byId('program-filter'), PROGRAM_FIELDS, programFor);
+    addFilterOptions(byId('age-filter'), AGE_GROUP_FIELDS, ageGroupFor);
     byId('data-error').hidden = true;
+    byId('dataset-status').textContent = 'Dataset connected';
+    byId('dataset-count').textContent = `${formatNumber(sum(appState.records, 'Participant_Count'))} records loaded`;
     render();
   } catch (error) {
     console.error(error);
     byId('data-error').hidden = false;
+    byId('data-error').textContent = `Could not load the dataset (${error.message}). Confirm the CSV is beside app.js and refresh this page.`;
+    byId('dataset-status').textContent = 'Dataset unavailable';
+    byId('dataset-count').textContent = 'Check the CSV file';
     byId('record-count').textContent = 'Dataset unavailable';
   }
 }
@@ -294,9 +340,13 @@ document.querySelectorAll('.nav-link').forEach((button) => button.addEventListen
 document.querySelectorAll('[data-go]').forEach((button) => button.addEventListener('click', () => setView(button.dataset.go)));
 byId('region-filter').addEventListener('change', render);
 byId('program-filter').addEventListener('change', render);
+byId('age-filter').addEventListener('change', render);
+byId('gender-filter').addEventListener('change', render);
 byId('clear-filters').addEventListener('click', () => {
   byId('region-filter').value = 'all';
   byId('program-filter').value = 'all';
+  byId('age-filter').value = 'all';
+  byId('gender-filter').value = 'all';
   render();
 });
 byId('participant-search').addEventListener('input', (event) => {
@@ -305,6 +355,8 @@ byId('participant-search').addEventListener('input', (event) => {
 });
 byId('export-button').addEventListener('click', exportCsv);
 byId('print-button').addEventListener('click', () => window.print());
+byId('theme-toggle').addEventListener('click', () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+applyTheme(localStorage.getItem('fieldwork-theme') || 'light');
 
 if (sessionStorage.getItem('fieldwork-user')) {
   byId('user-avatar').textContent = sessionStorage.getItem('fieldwork-user').slice(0, 2).toUpperCase();
