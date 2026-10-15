@@ -18,18 +18,23 @@
       <div class="story-index">01 <span>—</span> 04</div>
     </section>
     <section class="login-panel">
-      <div class="login-topline"><span>ADMINISTRATOR ACCESS</span><span class="status-pill"><i></i> SECURE WORKSPACE</span></div>
+      <div class="login-topline"><span id="login-access-label">ACCESS PORTAL</span><span class="status-pill"><i></i> LOCAL WORKSPACE</span></div>
       <form id="login-form" class="login-form">
         <p class="eyebrow">WELCOME BACK</p>
         <h2>Sign in to your<br>workspace.</h2>
-        <p class="login-hint">Use any email and password to enter this local demo.</p>
+        <p class="login-hint">Choose whether to sign in as an admin or a user.</p>
+        <label for="account-type">Login as</label>
+        <select id="account-type" name="account-type" class="login-select">
+          <option value="admin">Admin</option>
+          <option value="user">User</option>
+        </select>
         <label for="email">Work email</label>
         <input id="email" name="email" type="email" placeholder="you@organization.org" autocomplete="username" required>
         <label for="password">Password</label>
         <input id="password" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required>
         <p id="login-error" class="login-error" role="alert"></p>
         <button class="button button-primary login-submit" type="submit">Sign in <span aria-hidden="true">→</span></button>
-        <p class="demo-note">Local preview only. Authentication is not connected to an identity service.</p>
+        <p class="demo-note">Local preview only. Passwords are not validated; user data is stored in this browser.</p>
       </form>
       <div class="login-footer"><span>FIELDWORK ANALYTICS</span><span>DATA-LED. COMMUNITY-FOCUSED.</span></div>
     </section>
@@ -38,31 +43,41 @@
   <div id="app" class="app-shell" hidden>
     <aside class="sidebar">
       <a class="brand brand-dark" href="#overview" aria-label="Fieldwork overview"><span class="brand-mark">F</span><span>fieldwork<span class="brand-period">.</span></span></a>
-      <div class="workspace-label">WORKSPACE <span>01</span></div>
+      <div class="workspace-label"><span id="workspace-label">WORKSPACE</span><span>01</span></div>
       <nav class="side-nav" aria-label="Main navigation">
-        <button class="nav-link active" data-view="overview"><span class="nav-index">01</span> Overview</button>
-        <button class="nav-link" data-view="camps"><span class="nav-index">02</span> Program groups</button>
-        <button class="nav-link" data-view="participants"><span class="nav-index">03</span> Participants</button>
-        <button class="nav-link" data-view="analysis"><span class="nav-index">04</span> Analysis & outcomes</button>
+        <div id="admin-navigation">
+          <button class="nav-link active" data-view="overview"><span class="nav-index">01</span> Overview</button>
+          <button class="nav-link" data-view="camps"><span class="nav-index">02</span> Program groups</button>
+          <button class="nav-link" data-view="participants"><span class="nav-index">03</span> Participants</button>
+          <button class="nav-link" data-view="analysis"><span class="nav-index">04</span> Analysis & outcomes</button>
+        </div>
+        <div id="user-navigation" hidden>
+          <button class="nav-link" data-view="overview"><span class="nav-icon" aria-hidden="true">⌂</span> Dashboard</button>
+          <button class="nav-link" data-view="camps"><span class="nav-icon" aria-hidden="true">▱</span> Manage Programs</button>
+          <button class="nav-link" data-view="participants"><span class="nav-icon" aria-hidden="true">♙</span> Manage Participants</button>
+          <button class="nav-link" data-view="analysis"><span class="nav-icon" aria-hidden="true">▥</span> Statistical Analysis</button>
+          <button class="nav-link" data-view="profile"><span class="nav-icon" aria-hidden="true">●</span> User Details</button>
+          <button class="nav-link" data-view="reports"><span class="nav-icon" aria-hidden="true">▤</span> Generate Reports</button>
+        </div>
+        <button id="logout-button" class="nav-link logout-nav-link" type="button"><span class="nav-icon" aria-hidden="true">⇥</span> Sign out</button>
       </nav>
       <div class="sidebar-bottom">
         <div class="data-status"><span class="status-check">✓</span><div><strong id="dataset-status">Loading dataset</strong><small id="dataset-count">Please wait…</small></div></div>
-        <button id="logout-button" class="logout-button">Sign out <span aria-hidden="true">↗</span></button>
       </div>
     </aside>
 
     <main class="main-content">
       <header class="topbar">
         <div class="breadcrumbs"><span>PUBLIC HEALTH</span><span class="crumb-slash">/</span><strong id="breadcrumb-current">OVERVIEW</strong></div>
-        <div class="topbar-right"><span class="snapshot-tag"><i></i> DATASET SNAPSHOT</span><button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">☾ <span>Dark mode</span></button><span class="avatar" id="user-avatar">AD</span></div>
+        <div class="topbar-right"><span class="snapshot-tag"><i></i> <span id="workspace-tag">DATASET SNAPSHOT</span></span><button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">☾ <span>Dark mode</span></button><span class="avatar" id="user-avatar">AD</span></div>
       </header>
 
-      <section class="page-heading">
-        <div><p class="eyebrow">COMMUNITY PROGRAMS <span class="eyebrow-dot">·</span> ADMIN VIEW</p><h1 id="page-title">A pulse on public health.</h1><p id="page-subtitle" class="page-subtitle">One thousand participant records. A practical view of care delivered and outcomes reached.</p></div>
+      <section id="dashboard-heading" class="page-heading">
+        <div><p class="eyebrow">COMMUNITY PROGRAMS <span class="eyebrow-dot">·</span> <span id="view-label">ADMIN VIEW</span></p><h1 id="page-title">A pulse on public health.</h1><p id="page-subtitle" class="page-subtitle">One thousand participant records. A practical view of care delivered and outcomes reached.</p></div>
         <div class="heading-actions"><button id="export-button" class="button button-outline" type="button">↓ <span>Export CSV</span></button><button id="print-button" class="button button-dark" type="button">Print report <span aria-hidden="true">↗</span></button></div>
       </section>
 
-      <section class="filter-row" aria-label="Dashboard filters">
+      <section id="dashboard-filters" class="filter-row" aria-label="Dashboard filters">
         <div class="filter-caption"><span class="filter-glyph">⌕</span><span>VIEW DATA BY</span></div>
         <label class="filter-control"><span>Region</span><select id="region-filter"><option value="all">All regions</option></select></label>
         <label class="filter-control"><span>Program</span><select id="program-filter"><option value="all">All programs</option></select></label>
@@ -131,6 +146,68 @@
         </div>
         <article class="panel outcome-summary"><div class="panel-heading"><div><p class="eyebrow">EXECUTIVE SUMMARY</p><h2>Current filtered outcomes</h2></div><span id="analysis-records" class="panel-aside"></span></div><p id="summary-copy" class="summary-copy"></p></article>
         <div class="source-note"><span>METHOD</span><p>Outcome rate is the arithmetic mean of <code>Overall_Result_Percentage</code>. Referral follow-up rate is records with <code>Referral_Followup = 1</code> divided by records with <code>Hospital_Referral = 1</code>.</p></div>
+      </section>
+
+      <section id="view-profile" class="view-section user-profile-view" aria-label="User account details" hidden>
+        <div class="profile-page-heading"><p class="eyebrow">USER PROFILE</p><h1>Your Account Details</h1><p>View and manage your account information and personal details.</p></div>
+        <article class="profile-hero-card">
+          <div class="profile-person-mark" aria-hidden="true"><span></span></div>
+          <div class="profile-hero-details">
+            <div class="profile-name-row"><h2 id="profile-display-name">User</h2><span class="role-chip">User</span></div>
+            <div class="profile-meta"><span><b aria-hidden="true">✉</b><span id="profile-summary-email"></span></span><span><b aria-hidden="true">▣</b>Member since <span id="profile-joined-date"></span></span></div>
+          </div>
+          <button id="profile-edit-button" class="button button-outline" type="button"><span aria-hidden="true">✎</span> Edit Profile</button>
+        </article>
+        <div class="profile-content-grid">
+          <div class="profile-left-column">
+            <article class="profile-panel personal-panel">
+              <h2>Personal Information</h2>
+              <dl class="personal-list">
+                <div><dt><span aria-hidden="true">♙</span>Full Name</dt><dd id="profile-info-name"></dd></div>
+                <div><dt><span aria-hidden="true">✉</span>Email Address</dt><dd id="profile-info-email"></dd></div>
+                <div><dt><span aria-hidden="true">⌕</span>Phone Number</dt><dd id="profile-info-phone"></dd></div>
+                <div><dt><span aria-hidden="true">▣</span>Role</dt><dd>User</dd></div>
+                <div><dt><span aria-hidden="true">▦</span>Join Date</dt><dd id="profile-info-joined"></dd></div>
+              </dl>
+            </article>
+            <article class="profile-panel activity-panel">
+              <div class="profile-panel-heading"><h2><span aria-hidden="true">◷</span> Recent Activity</h2><span>RECENT</span></div>
+              <ul id="profile-activity" class="activity-list"></ul>
+            </article>
+          </div>
+          <article class="profile-panel account-panel">
+            <h2>Account Settings</h2>
+            <form id="profile-form">
+              <label for="profile-name-input">Full Name</label>
+              <input id="profile-name-input" name="full-name" type="text" maxlength="80" required>
+              <label for="profile-email-input">Email Address</label>
+              <input id="profile-email-input" name="email" type="email" readonly>
+              <label for="profile-phone-input">Phone Number</label>
+              <input id="profile-phone-input" name="phone" type="tel" maxlength="32" placeholder="Add a phone number">
+              <button id="password-help" class="password-help" type="button"><span class="password-lock" aria-hidden="true">▣</span><span><strong>Change Password</strong><small>Update your password for better security.</small></span><span aria-hidden="true">›</span></button>
+              <p id="password-note" class="password-note" hidden>Password updates are unavailable in this local preview because authentication is not connected.</p>
+              <button class="button button-dark profile-save" type="submit"><span aria-hidden="true">▣</span> Save Changes</button>
+              <p id="profile-save-status" class="profile-save-status" role="status"></p>
+            </form>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-reports" class="view-section" aria-label="Generate reports" hidden>
+        <div class="section-kicker"><span>REPORTING</span><span class="kicker-line"></span><span id="report-period">CURRENT DATA</span></div>
+        <div class="reports-page"><div><p class="eyebrow">GENERATE REPORTS</p><h1>Public Health Program Report</h1><p>Review participant reach, services delivered, and outcomes in your user dataset.</p></div>
+          <div class="report-actions"><button id="generate-report-button" class="button button-outline" type="button"><span aria-hidden="true">↻</span> Generate report</button><button id="user-export-button" class="button button-dark" type="button"><span aria-hidden="true">↓</span> Export CSV</button><button id="user-print-button" class="button button-outline" type="button"><span aria-hidden="true">▤</span> Print report</button></div>
+        </div>
+        <article class="report-document">
+          <header class="report-document-header"><div><p class="eyebrow">FIELDWORK <span class="eyebrow-dot">·</span> HEALTH PROGRAMS</p><h2>Participation &amp; outcomes</h2><p>Summary of services and recorded outcomes across the current dataset.</p></div><dl class="report-metadata"><div><dt>Prepared for</dt><dd id="report-prepared-for">User</dd></div><div><dt>Generated</dt><dd id="report-generated-at"></dd></div><div><dt>Records</dt><dd id="report-record-total">0</dd></div></dl></header>
+          <div id="report-kpis" class="report-kpis"></div>
+          <section class="report-summary-block"><p class="eyebrow">EXECUTIVE SUMMARY</p><p id="report-summary-copy"></p></section>
+          <div class="report-tables-grid">
+            <section class="report-table-section"><div class="report-table-heading"><div><p class="eyebrow">GEOGRAPHIC REACH</p><h3>Results by region</h3></div><span>REGION</span></div><div class="table-scroll"><table><thead><tr><th>REGION</th><th>PARTICIPANTS</th><th>CHECKUPS</th><th>REFERRALS</th></tr></thead><tbody id="report-regions-body"></tbody></table></div></section>
+            <section class="report-table-section"><div class="report-table-heading"><div><p class="eyebrow">PROGRAM DELIVERY</p><h3>Results by program</h3></div><span>PROGRAM</span></div><div class="table-scroll"><table><thead><tr><th>PROGRAM</th><th>PARTICIPANTS</th><th>CHECKUPS</th><th>VACCINATIONS</th></tr></thead><tbody id="report-programs-body"></tbody></table></div></section>
+          </div>
+          <p class="report-method">Source: the signed-in user's local dataset. Totals reflect the current dashboard filters. Outcome rate is the mean of the recorded overall result percentage.</p>
+        </article>
       </section>
 
       <footer class="app-footer"><span>FIELDWORK <span class="brand-period">.</span> PUBLIC HEALTH INTELLIGENCE</span><span>LOCAL DATA VIEW <span class="footer-separator">/</span> PREPROCESSED CSV</span></footer>

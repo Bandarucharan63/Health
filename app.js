@@ -18,7 +18,7 @@ const AGE_GROUP_FIELDS = [
   ['Age_Group_60+', '60+'],
 ];
 const numberFormat = new Intl.NumberFormat('en-US');
-const appState = { records: [], view: 'overview', search: '', pageSize: 100 };
+const appState = { records: [], view: 'overview', search: '', pageSize: 100, role: 'admin', profile: null };
 
 const byId = (id) => document.getElementById(id);
 const sum = (records, field) => records.reduce((total, record) => total + (Number(record[field]) || 0), 0);
@@ -275,12 +275,54 @@ function setView(view) {
     section.classList.toggle('active', active);
     section.hidden = !active;
   });
-  const current = view === 'camps' ? 'PROGRAM GROUPS' : view === 'analysis' ? 'ANALYSIS & OUTCOMES' : view.toUpperCase();
+  const current = view === 'camps' ? (appState.role === 'user' ? 'PROGRAMS' : 'PROGRAM GROUPS') : view === 'analysis' ? (appState.role === 'user' ? 'STATISTICAL ANALYSIS' : 'ANALYSIS & OUTCOMES') : view === 'profile' ? 'PROFILE' : view === 'reports' ? 'REPORTS' : view.toUpperCase();
   byId('breadcrumb-current').textContent = current;
-  const titles = { overview: ['A pulse on public health.', 'One thousand participant records. A practical view of care delivered and outcomes reached.'], camps: ['Program groups.', 'Explore participant-level reach and outcomes across encoded region and program groups.'], participants: ['Participant records.', 'Search the preprocessed source data and review individual service and outcome flags.'], analysis: ['Analysis & outcomes.', 'A transparent summary of screening, referral follow-up, outcome rates, and data quality.'] };
+  const titles = { overview: ['A pulse on public health.', 'One thousand participant records. A practical view of care delivered and outcomes reached.'], camps: ['Program groups.', 'Explore participant-level reach and outcomes across encoded region and program groups.'], participants: ['Participant records.', 'Search the preprocessed source data and review individual service and outcome flags.'], analysis: ['Analysis & outcomes.', 'A transparent summary of screening, referral follow-up, outcome rates, and data quality.'], profile: ['Your Account Details', 'View and manage your account information and personal details.'], reports: ['Generate Reports', 'Export participant data or print the current report.'] };
   byId('page-title').textContent = titles[view][0];
   byId('page-subtitle').textContent = titles[view][1];
+  const profilePage = view === 'profile' || view === 'reports';
+  byId('dashboard-heading').hidden = profilePage;
+  byId('dashboard-filters').hidden = profilePage;
+  document.querySelector('.breadcrumbs span:first-child').textContent = appState.role === 'user' ? 'USER' : 'PUBLIC HEALTH';
+  if (view === 'reports') renderReport();
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderReport() {
+  const records = filteredRecords();
+  const participants = sum(records, 'Participant_Count');
+  const checkups = sum(records, 'Health_Checkup');
+  const vaccinations = sum(records, 'Vaccine_Received');
+  const cases = sum(records, 'Health_Problem_Found');
+  const referrals = sum(records, 'Hospital_Referral');
+  const followups = sum(records, 'Referral_Followup');
+  const outcome = average(records, 'Overall_Result_Percentage');
+  const reportDate = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date());
+  const userName = appState.profile?.name || sessionStorage.getItem('fieldwork-user') || 'User';
+  byId('report-period').textContent = records.length === appState.records.length ? 'ALL USER RECORDS' : 'FILTERED USER VIEW';
+  byId('report-prepared-for').textContent = userName;
+  byId('report-generated-at').textContent = reportDate;
+  byId('report-record-total').textContent = formatNumber(participants);
+
+  const kpis = [
+    ['Participants', participants, 'participant records'],
+    ['Health checkups', checkups, `${formatPercent(participants ? checkups / participants * 100 : 0)} coverage`],
+    ['Cases identified', cases, 'health issues flagged'],
+    ['Hospital referrals', referrals, `${formatNumber(followups)} with follow-up`],
+    ['Average outcome', formatPercent(outcome), 'mean result percentage'],
+  ];
+  byId('report-kpis').innerHTML = kpis.map(([label, value, note]) => `<article class="report-kpi"><span>${escapeHtml(label)}</span><strong>${typeof value === 'number' ? formatNumber(value) : value}</strong><small>${escapeHtml(note)}</small></article>`).join('');
+  byId('report-summary-copy').textContent = `The current dataset contains ${formatNumber(participants)} participant records. ${formatNumber(checkups)} health checkups were recorded (${formatPercent(participants ? checkups / participants * 100 : 0)} coverage), alongside ${formatNumber(vaccinations)} vaccinations. ${formatNumber(cases)} records were flagged with a health problem and ${formatNumber(referrals)} hospital referrals were recorded; ${formatNumber(followups)} referrals have follow-up recorded (${formatPercent(referrals ? followups / referrals * 100 : 0)}). The mean overall result is ${formatPercent(outcome)}.`;
+
+  const regionRows = REGION_FIELDS.map(([, label]) => ({ label, rows: records.filter((record) => regionFor(record) === label) }));
+  const uncodedRegionRows = records.filter((record) => regionFor(record) === 'Not coded');
+  if (uncodedRegionRows.length) regionRows.push({ label: 'Not coded', rows: uncodedRegionRows });
+  byId('report-regions-body').innerHTML = regionRows.map(({ label, rows }) => `<tr><td>${escapeHtml(label)}</td><td class="table-number">${formatNumber(sum(rows, 'Participant_Count'))}</td><td class="table-number">${formatNumber(sum(rows, 'Health_Checkup'))}</td><td class="table-number">${formatNumber(sum(rows, 'Hospital_Referral'))}</td></tr>`).join('') || '<tr><td colspan="4">No matching records.</td></tr>';
+
+  const programRows = PROGRAM_FIELDS.map(([, label]) => ({ label, rows: records.filter((record) => programFor(record) === label) }));
+  const uncodedProgramRows = records.filter((record) => programFor(record) === 'Not coded');
+  if (uncodedProgramRows.length) programRows.push({ label: 'Not coded', rows: uncodedProgramRows });
+  byId('report-programs-body').innerHTML = programRows.map(({ label, rows }) => `<tr><td>${escapeHtml(label)}</td><td class="table-number">${formatNumber(sum(rows, 'Participant_Count'))}</td><td class="table-number">${formatNumber(sum(rows, 'Health_Checkup'))}</td><td class="table-number">${formatNumber(sum(rows, 'Vaccine_Received'))}</td></tr>`).join('') || '<tr><td colspan="4">No matching records.</td></tr>';
 }
 
 function exportCsv() {
@@ -296,19 +338,37 @@ function exportCsv() {
   URL.revokeObjectURL(url);
 }
 
-async function loadData() {
+async function loadData(role, email) {
   try {
     const response = await fetch(DATA_URL);
     if (!response.ok) throw new Error(`CSV request failed: ${response.status}`);
-    appState.records = parseCsv(await response.text());
+    const sourceRecords = parseCsv(await response.text());
+    if (role === 'user') {
+      const databaseKey = `fieldwork-user-database:${email.toLowerCase()}`;
+      const savedRecords = localStorage.getItem(databaseKey);
+      if (savedRecords === null) {
+        appState.records = sourceRecords;
+        localStorage.setItem(databaseKey, JSON.stringify(sourceRecords));
+      } else {
+        appState.records = JSON.parse(savedRecords);
+        if (!Array.isArray(appState.records)) throw new Error('The user database is invalid.');
+      }
+    } else {
+      appState.records = sourceRecords;
+    }
     if (!appState.records.length) throw new Error('The CSV has no participant rows.');
+    ['region-filter', 'program-filter', 'age-filter'].forEach((id) => {
+      const select = byId(id);
+      while (select.options.length > 1) select.remove(1);
+    });
     addFilterOptions(byId('region-filter'), REGION_FIELDS, regionFor);
     addFilterOptions(byId('program-filter'), PROGRAM_FIELDS, programFor);
     addFilterOptions(byId('age-filter'), AGE_GROUP_FIELDS, ageGroupFor);
     byId('data-error').hidden = true;
-    byId('dataset-status').textContent = 'Dataset connected';
+    byId('dataset-status').textContent = role === 'user' ? 'User database connected' : 'Admin dataset connected';
     byId('dataset-count').textContent = `${formatNumber(sum(appState.records, 'Participant_Count'))} records loaded`;
     render();
+    if (appState.view === 'reports') renderReport();
   } catch (error) {
     console.error(error);
     byId('data-error').hidden = false;
@@ -319,24 +379,119 @@ async function loadData() {
   }
 }
 
+function formatProfileDate(value) {
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(value));
+}
+
+function getUserProfile(email) {
+  const profileKey = `fieldwork-user-profile:${email.toLowerCase()}`;
+  const savedProfile = localStorage.getItem(profileKey);
+  if (savedProfile) {
+    const profile = JSON.parse(savedProfile);
+    if (profile && profile.email === email) return profile;
+  }
+  const name = email.split('@')[0].split(/[._-]+/).filter(Boolean).map((part) => part[0].toUpperCase() + part.slice(1)).join(' ') || 'User';
+  const profile = { name, email, phone: '', joinedAt: new Date().toISOString(), activity: [] };
+  localStorage.setItem(profileKey, JSON.stringify(profile));
+  return profile;
+}
+
+function saveUserProfile() {
+  if (!appState.profile) return;
+  localStorage.setItem(`fieldwork-user-profile:${appState.profile.email.toLowerCase()}`, JSON.stringify(appState.profile));
+}
+
+function addProfileActivity(action, detail) {
+  if (!appState.profile) return;
+  appState.profile.activity.unshift({ action, detail, at: new Date().toISOString() });
+  appState.profile.activity = appState.profile.activity.slice(0, 8);
+  saveUserProfile();
+}
+
+function renderUserProfile() {
+  const profile = appState.profile;
+  if (!profile) return;
+  const joinedDate = formatProfileDate(profile.joinedAt);
+  byId('profile-display-name').textContent = profile.name;
+  byId('profile-summary-email').textContent = profile.email;
+  byId('profile-joined-date').textContent = joinedDate;
+  byId('profile-info-name').textContent = profile.name;
+  byId('profile-info-email').textContent = profile.email;
+  byId('profile-info-phone').textContent = profile.phone || 'Not provided';
+  byId('profile-info-joined').textContent = joinedDate;
+  byId('profile-name-input').value = profile.name;
+  byId('profile-email-input').value = profile.email;
+  byId('profile-phone-input').value = profile.phone;
+  byId('user-avatar').textContent = profile.name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
+  byId('profile-activity').innerHTML = profile.activity.map((item) => {
+    const date = new Date(item.at);
+    const time = new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit' }).format(date);
+    return `<li><span class="activity-icon" aria-hidden="true">▤</span><span class="activity-copy"><strong>${escapeHtml(item.action)}</strong><small>${escapeHtml(item.detail)}</small></span><span class="activity-time">${formatProfileDate(item.at)}<small>${time}</small></span></li>`;
+  }).join('') || '<li class="activity-empty">No recent activity.</li>';
+}
+
+function enterWorkspace(role, email) {
+  appState.role = role;
+  byId('app').classList.toggle('user-mode', role === 'user');
+  sessionStorage.setItem('fieldwork-user', email);
+  sessionStorage.setItem('fieldwork-role', role);
+  byId('admin-navigation').hidden = role === 'user';
+  byId('user-navigation').hidden = role !== 'user';
+  byId('workspace-label').textContent = role === 'user' ? 'USER WORKSPACE' : 'WORKSPACE';
+  byId('workspace-tag').textContent = role === 'user' ? 'LOCAL WORKSPACE' : 'DATASET SNAPSHOT';
+  byId('view-label').textContent = `${role.toUpperCase()} VIEW`;
+  if (role === 'user') {
+    appState.profile = getUserProfile(email);
+    addProfileActivity('Logged in', 'Signed in to the local workspace');
+    renderUserProfile();
+  } else {
+    appState.profile = null;
+    byId('user-avatar').textContent = email.slice(0, 2).toUpperCase();
+  }
+  byId('login-screen').hidden = true;
+  byId('app').hidden = false;
+  setView(role === 'user' ? 'profile' : 'overview');
+  loadData(role, email);
+}
+
+function updateLoginRole() {
+  byId('login-access-label').textContent = `${byId('account-type').value.toUpperCase()} LOGIN`;
+}
+
+byId('account-type').addEventListener('change', updateLoginRole);
+updateLoginRole();
+
 byId('login-form').addEventListener('submit', (event) => {
   event.preventDefault();
   if (!byId('login-form').reportValidity()) return;
   const email = byId('email').value.trim();
-  sessionStorage.setItem('fieldwork-user', email);
-  byId('user-avatar').textContent = email.slice(0, 2).toUpperCase();
-  byId('login-screen').hidden = true;
-  byId('app').hidden = false;
-  loadData();
+  enterWorkspace(byId('account-type').value, email);
 });
 
 byId('logout-button').addEventListener('click', () => {
   sessionStorage.removeItem('fieldwork-user');
+  sessionStorage.removeItem('fieldwork-role');
   byId('app').hidden = true;
   byId('login-screen').hidden = false;
   byId('login-form').reset();
 });
-document.querySelectorAll('.nav-link').forEach((button) => button.addEventListener('click', () => setView(button.dataset.view)));
+byId('profile-edit-button').addEventListener('click', () => {
+  byId('profile-name-input').focus();
+  byId('profile-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+byId('profile-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  if (!byId('profile-form').reportValidity() || !appState.profile) return;
+  appState.profile.name = byId('profile-name-input').value.trim();
+  appState.profile.phone = byId('profile-phone-input').value.trim();
+  addProfileActivity('Profile updated', 'Saved account information');
+  renderUserProfile();
+  byId('profile-save-status').textContent = 'Changes saved in this browser.';
+});
+byId('password-help').addEventListener('click', () => {
+  byId('password-note').hidden = !byId('password-note').hidden;
+});
+document.querySelectorAll('.nav-link[data-view]').forEach((button) => button.addEventListener('click', () => setView(button.dataset.view)));
 document.querySelectorAll('[data-go]').forEach((button) => button.addEventListener('click', () => setView(button.dataset.go)));
 byId('region-filter').addEventListener('change', render);
 byId('program-filter').addEventListener('change', render);
@@ -354,13 +509,19 @@ byId('participant-search').addEventListener('input', (event) => {
   renderParticipants(filteredRecords());
 });
 byId('export-button').addEventListener('click', exportCsv);
+byId('user-export-button').addEventListener('click', exportCsv);
+byId('generate-report-button').addEventListener('click', () => {
+  renderReport();
+  if (appState.profile) addProfileActivity('Report generated', 'Generated a participant and outcomes report');
+});
 byId('print-button').addEventListener('click', () => window.print());
+byId('user-print-button').addEventListener('click', () => window.print());
 byId('theme-toggle').addEventListener('click', () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
 applyTheme(localStorage.getItem('fieldwork-theme') || 'light');
 
 if (sessionStorage.getItem('fieldwork-user')) {
-  byId('user-avatar').textContent = sessionStorage.getItem('fieldwork-user').slice(0, 2).toUpperCase();
-  byId('login-screen').hidden = true;
-  byId('app').hidden = false;
-  loadData();
+  const role = sessionStorage.getItem('fieldwork-role') || 'admin';
+  byId('account-type').value = role;
+  updateLoginRole();
+  enterWorkspace(role, sessionStorage.getItem('fieldwork-user'));
 }
